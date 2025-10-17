@@ -7,19 +7,21 @@
 
 ![cell2sentence workflow image](c2s_overview_figure.png)
 
-Implementation of [**"Scaling Large Language Models for Next-Generation Single-Cell Analysis"**](https://www.biorxiv.org/content/10.1101/2025.04.14.648850v1), the latest Cell2Sentence (C2S-Scale) framework for applying Large Language Models (LLMs) to single-cell transcriptomics.  The previous paper establishing the C2S methodology can be found [here](https://www.biorxiv.org/content/10.1101/2023.09.11.557287v4).
+Implementation of [**"Scaling Large Language Models for Next-Generation Single-Cell Analysis"**](https://www.biorxiv.org/content/10.1101/2025.04.14.648850v2), the latest Cell2Sentence (C2S-Scale) framework for applying Large Language Models (LLMs) to single-cell transcriptomics.  The previous paper establishing the C2S methodology can be found [here](https://www.biorxiv.org/content/10.1101/2023.09.11.557287v4).
 C2S proposes a rank-ordering transformation of expression vectors into *cell sentences*—space-separated gene names ordered by descending expression—which allows LLMs to natively model scRNA-seq data using natural language.
 
 The new **C2S-Scale** models scale to 27B parameters, unify transcriptomic and textual data, and enable advanced single-cell tasks including perturbation prediction, dataset summarization, and cluster captioning, and biological question answering. C2S-Scale models based on the Pythia architecture are already available on [Huggingface](https://huggingface.co/collections/vandijklab/cell2sentence-models-66d71f690a7b77558a36b9ef), and models based on Gemma-2 will soon be made available.
 
-For more information, check out the [paper](https://www.biorxiv.org/content/10.1101/2025.04.14.648850v1), explore the [documentation](https://vandijklab-cell2sentence.readthedocs.io/), or reach out to us at the [van Dijk Lab](https://www.vandijklab.org/)!
+For more information, check out the [paper](https://www.biorxiv.org/content/10.1101/2025.04.14.648850v2), explore the [documentation](https://vandijklab-cell2sentence.readthedocs.io/), or reach out to us at the [van Dijk Lab](https://www.vandijklab.org/)!
 
 
 
 ## News
+🚀 (10/15/2025) The **C2S-Scale Gemma-2 2B and 27B** pretrained models are now available on HuggingFace: [C2S-Scale-Gemma-Models](https://huggingface.co/collections/vandijklab/c2s-scale-gemma-models-68ed5e4d3b55c8c29682d842). Check out what's new in our [updated preprint](https://www.biorxiv.org/content/10.1101/2025.04.14.648850v2) and [blog post](https://blog.google/technology/ai/google-gemma-ai-cancer-therapy-discovery/) from Google!
+
 📰 (04/17/2025) We published a **blog post** in collaboration with Google Research and Google DeepMind! Read it [here](https://research.google/blog/teaching-machines-the-language-of-biology-scaling-large-language-models-for-next-generation-single-cell-analysis/) to learn how Cell2Sentence is enabling next-gen single-cell discovery with LLMs.
 
-🧠 (04/17/2025) We released the new **C2S-Scale preprint**, including larger models and tons of new experiments! Read the full paper on bioRxiv [here](https://www.biorxiv.org/content/10.1101/2025.04.14.648850v1).
+🧠 (04/17/2025) We released the new **C2S-Scale preprint**, including larger models and tons of new experiments! Read the full paper on bioRxiv [here](https://www.biorxiv.org/content/10.1101/2025.04.14.648850v2).
 
 🚀 (04/17/2025) The **C2S-Scale-1B** pretrained model is now available on HuggingFace: [vandijklab/c2s-scale-1b](https://huggingface.co/vandijklab/C2S-Scale-Pythia-1b-pt).
 

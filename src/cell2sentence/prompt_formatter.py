@@ -24,6 +24,7 @@ SUPPORTED_TASKS = [
 MULTICELL_SUPPORTED_TASKS = [
     "tissue_prediction",
     "tissue_conditional_generation",
+    "natural_language_interpretation",
 ]
 
 
@@ -179,6 +180,9 @@ class C2SMultiCellPromptFormatter(PromptFormatter):
         elif task == "tissue_conditional_generation":
             with open(HERE / "prompts/multi_cell_tissue_conditional_generation.json", "r") as f:
                 self.prompts_dict = json.load(f)
+        elif task == "natural_language_interpretation":
+            with open(HERE / "prompts/multi_cell_natural_lang_interpretation_prompts.json", "r") as f:
+                self.prompts_dict = json.load(f)
     
     def get_keys_for_task(self):
         """
@@ -191,6 +195,9 @@ class C2SMultiCellPromptFormatter(PromptFormatter):
         elif self.task == "tissue_conditional_generation":
             model_input_keys = ["num_genes", "num_cells", "organism", "tissue"]
             response_keys = ["multi_cell_sentences"]
+        elif self.task == "natural_language_interpretation":
+            model_input_keys = ["num_genes", "num_cells", "organism", "multi_cell_sentences"]
+            response_keys = ["abstract"]
         
         return model_input_keys, response_keys
     
