@@ -184,3 +184,6 @@ notebooks
 scripts
 tutorials/wandb
 example_*.py
+
+# Exploration notebooks
+**/explore.ipynb
