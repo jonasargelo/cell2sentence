@@ -31,7 +31,7 @@ class CSModel():
     in cell2sentence based workflows.
     """
 
-    def __init__(self, model_name_or_path, save_dir, save_name):
+    def __init__(self, model_name_or_path, save_dir=None, save_name=None):
         """
         Core constructor, CSModel class contains a path to a model.
 
@@ -40,18 +40,15 @@ class CSModel():
                 want to start with a default LLM, or a path to an already-trained C2S
                 model on disk if want to do inference with/finetune starting from
                 an already-trained C2S model
-            save_dir: directory where model should be saved to
-            save_name: name to save model under (no file extension needed)
+            save_dir: directory where model should be saved to. Optional - only needed
+                for fine-tuning. If None, model will use HuggingFace cache (default).
+            save_name: name to save model under (no file extension needed). Only needed
+                if save_dir is provided.
         """
         self.model_name_or_path = model_name_or_path  # path to model to load
         self.save_dir = save_dir
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print("Using device:", self.device)
-
-        # Create save path
-        if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
-        self.save_path = os.path.join(save_dir, save_name)
 
         # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -60,13 +57,25 @@ class CSModel():
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        # Load model - either a pretrained C2S model path, or a Huggingface LLM name (if want to train from scratch on your own dataset)
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name_or_path,
-            cache_dir=os.path.join(save_dir, ".cache"),  # model file takes up several GB if loading default Huggignface LLM models
-            trust_remote_code=True
-        )
-        model.save_pretrained(self.save_path)
+        # Only create local save if save_dir and save_name are provided (for fine-tuning)
+        if save_dir is not None and save_name is not None:
+            # Create save path
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir, exist_ok=True)
+            self.save_path = os.path.join(save_dir, save_name)
+
+            # Load model and save locally for fine-tuning workflow
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name_or_path,
+                cache_dir=os.path.join(save_dir, ".cache"),
+                trust_remote_code=True
+            )
+            model.save_pretrained(self.save_path)
+            print(f"Model saved locally to: {self.save_path}")
+        else:
+            # For inference-only: use model_name_or_path directly, leverage HF cache
+            self.save_path = model_name_or_path
+            print(f"Inference mode: model will be loaded from HuggingFace cache")
 
     def __str__(self):
         """
@@ -113,6 +122,13 @@ class CSModel():
         Return:
             None: an updated CSModel is generated in-place
         """
+        # Check that save_dir was provided for fine-tuning
+        if self.save_dir is None:
+            raise ValueError(
+                "Cannot fine-tune without save_dir. Please initialize CSModel with "
+                "save_dir and save_name parameters to enable fine-tuning."
+            )
+        
         # Load data from csdata object
         if csdata.dataset_backend == "arrow":
             hf_ds = load_from_disk(csdata.data_path)
