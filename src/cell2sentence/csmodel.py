@@ -7,10 +7,12 @@ Main model wrapper class definition
 #
 
 # Python built-in libraries
+import logging
 import os
 import pickle
 from random import sample
 from typing import Optional
+import logging
 
 # Third-party libraries
 import numpy as np
@@ -18,7 +20,8 @@ from datasets import load_from_disk, DatasetDict, Dataset
 
 # Pytorch, Huggingface imports
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
+import transformers
+from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments, PrinterCallback
 
 # Local imports
 from cell2sentence.prompt_formatter import PromptFormatter, C2SPromptFormatter
@@ -75,7 +78,7 @@ class CSModel():
         else:
             # For inference-only: use model_name_or_path directly, leverage HF cache
             self.save_path = model_name_or_path
-            print(f"Inference mode: model will be loaded from HuggingFace cache")
+            print(f"Inference mode: model will be loaded from {self.save_path}")
 
     def __str__(self):
         """
@@ -94,6 +97,8 @@ class CSModel():
         prompt_formatter: Optional[PromptFormatter] = None,
         formatted_hf_ds: Optional[Dataset] = None,
         num_proc: int = 3,
+        perturbation_split: Optional[dict] = None,
+        callbacks: Optional[list] = None,
     ):
         """
         Fine tune a model using the provided CSData object data
@@ -119,6 +124,10 @@ class CSModel():
                             used in cases where custom formatting is desired (e.g. multicell
                             tasks where more complex formatting is needed).
             num_proc: number of processes to use for tokenization. Defaults to 3.
+            perturbation_split: optional dictionary with "train" and "val" keys containing
+                               lists of perturbation names. If provided, will split the
+                               formatted dataset based on perturbation membership. Requires
+                               formatted dataset to have a "perturbation" column.
         Return:
             None: an updated CSModel is generated in-place
         """
@@ -199,7 +208,35 @@ class CSModel():
         print(f"Starting training. Output directory: {output_dir}")
 
         # Perform dataset split
-        if data_split_indices_dict is None:
+        if perturbation_split is not None:
+            # Split based on perturbation membership (after formatting)
+            print("Splitting dataset based on perturbation lists...")
+            if "perturbation" not in formatted_hf_ds.column_names:
+                raise ValueError(
+                    "perturbation_split provided but formatted dataset has no 'perturbation' column. "
+                    "Make sure your prompt_formatter adds a 'perturbation' column."
+                )
+            
+            train_perts = perturbation_split["train"]
+            val_perts = perturbation_split["val"]
+            
+            # Create indices for train and val based on perturbation membership
+            train_indices = [i for i in range(len(formatted_hf_ds)) 
+                           if formatted_hf_ds[i]["perturbation"] in train_perts]
+            val_indices = [i for i in range(len(formatted_hf_ds)) 
+                          if formatted_hf_ds[i]["perturbation"] in val_perts]
+            
+            print(f"Split based on perturbations: {len(train_indices)} train, {len(val_indices)} val samples")
+            
+            train_ds = formatted_hf_ds.select(train_indices)
+            val_ds = formatted_hf_ds.select(val_indices)
+            ds_dict_object = {
+                "train": train_ds,
+                "validation": val_ds,
+            }
+            split_ds_dict = DatasetDict(ds_dict_object)
+            data_split_indices_dict = {"train": train_indices, "val": val_indices}
+        elif data_split_indices_dict is None:
             split_ds_dict, data_split_indices_dict = train_test_split_arrow_ds(formatted_hf_ds)
         else:
             # Dataset split indices supplied by user, split formatted arrow dataset accordingly
@@ -222,15 +259,16 @@ class CSModel():
             print(f"Selecting {max_eval_samples} samples of eval dataset to shorten validation loop.")
             eval_dataset = eval_dataset.select(sampled_eval_indices)
         
-        # Define Trainer
         trainer = Trainer(
             model=model,
             args=train_args,
             data_collator=data_collator,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            tokenizer=self.tokenizer
+            tokenizer=self.tokenizer,
+            callbacks=callbacks
         )
+        trainer.remove_callback(PrinterCallback)
         trainer.train()
         print(f"Finetuning completed. Updated model saved to disk at: {output_dir}")
 
